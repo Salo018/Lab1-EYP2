@@ -71,6 +71,8 @@ df$modalidad <- str_replace(df$modalidad, "presencial", "in_person")
 sum(is.na(df$horas_estudio))
 dim(df)[1]
 
+
+#' Se crea la siguiente funcion para sacar el porcentaje de nulos en cualquier columna
 nulos_columna <- function(columna, nombre = "columna"){
     nulos <- (sum(is.na(columna)))
     cat("Porcentaje de nulos en la columna",nombre,"es de:", ((nulos/dim(df)[1])*100) ,"%")
