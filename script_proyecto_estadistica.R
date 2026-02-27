@@ -67,30 +67,43 @@ df$trabaja <- str_replace(df$trabaja, "sí", "yes")
 df$modalidad<- tolower(df$modalidad) 
 df$modalidad <- str_replace(df$modalidad, "presencial", "in_person") 
 
-# Analisis de nulos
-sum(is.na(df$horas_estudio))
-dim(df)[1]
 
+#' Se crea la siguiente funcion para sacar el numero de negativos en cualquier columna
+negativos_columna <- function(columna, nombre = "columna"){
+  negativos <- sum(columna < 0, na.rm = TRUE)
+  
+  columna[columna < 0] <- NA # Convertir  menores a 0 a nulos
+  
+  cat("Se convirtieron",negativos,"en la columna:",nombre)
+  return(columna)
+}
+
+df$horas_estudio <- negativos_columna(df$horas_estudio, "horas_estudio")
+df$asistencia <- negativos_columna(df$asistencia, "asistencia")
+df$horas_sueno <- negativos_columna(df$horas_sueno, "horas_sueno")
+df$estres <- negativos_columna(df$estres, "estres")
+df$uso_redes <- negativos_columna(df$uso_redes, "uso_redes")
+df$ingresos_familiares <- negativos_columna(df$ingresos_familiares, "ingresos_familiares")
 
 #' Se crea la siguiente funcion para sacar el porcentaje de nulos en cualquier columna
 nulos_columna <- function(columna, nombre = "columna"){
+  
     nulos <- (sum(is.na(columna)))
+    
     cat("Porcentaje de nulos en la columna",nombre,"es de:", ((nulos/dim(df)[1])*100) ,"%")
 }
-
-nulos_columna(df$puntaje_final, "puntaje_final")
 nulos_columna(df$horas_estudio, "horas_estudio")
 nulos_columna(df$asistencia, "asistencia")
 nulos_columna(df$promedio_previo, "promedio_previo")
-nulos_columna(df$horas_sueno, "horas_sueno")
-nulos_columna(df$edad, "edad")
-nulos_columna(df$uso_redes, "uso_redes")
-nulos_columna(df$ingresos_familiares, "ingresos_familiares")
-nulos_columna(df$genero, "genero")
+nulos_columna(df$estres, "estres")
 nulos_columna(df$carrera, "carrera")
-nulos_columna(df$acceso_internet, "acceso_internet")
-nulos_columna(df$trabaja, "trabaja")
-nulos_columna(df$modalidad, "modalidad")
+
+
+summary(df)
+
+
+
+
 
 
 
