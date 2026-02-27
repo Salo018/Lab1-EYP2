@@ -67,6 +67,28 @@ df$trabaja <- str_replace(df$trabaja, "sí", "yes")
 df$modalidad<- tolower(df$modalidad) 
 df$modalidad <- str_replace(df$modalidad, "presencial", "in_person") 
 
+# Analisis de nulos
+sum(is.na(df$horas_estudio))
+dim(df)[1]
+
+nulos_columna <- function(columna, nombre = "columna"){
+    nulos <- (sum(is.na(columna)))
+    cat("Porcentaje de nulos en la columna",nombre,"es de:", ((nulos/dim(df)[1])*100) ,"%")
+}
+
+nulos_columna(df$puntaje_final, "puntaje_final")
+nulos_columna(df$horas_estudio, "horas_estudio")
+nulos_columna(df$asistencia, "asistencia")
+nulos_columna(df$promedio_previo, "promedio_previo")
+nulos_columna(df$horas_sueno, "horas_sueno")
+nulos_columna(df$edad, "edad")
+nulos_columna(df$uso_redes, "uso_redes")
+nulos_columna(df$ingresos_familiares, "ingresos_familiares")
+nulos_columna(df$genero, "genero")
+nulos_columna(df$carrera, "carrera")
+nulos_columna(df$acceso_internet, "acceso_internet")
+nulos_columna(df$trabaja, "trabaja")
+nulos_columna(df$modalidad, "modalidad")
 
 
 
