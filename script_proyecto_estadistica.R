@@ -99,12 +99,39 @@ nulos_columna(df$promedio_previo, "promedio_previo")
 nulos_columna(df$estres, "estres")
 nulos_columna(df$carrera, "carrera")
 
-
 summary(df)
+
+# Limpieza de valores fuera de rango 
+#Columna de asistencia. Se borran los valores fuera de rango 
+# Representan un porcentaje pequeño en el total de los datos 
+((sum(df$asistencia > 100, na.rm = TRUE))/dim(df)[1])*100
+df <- subset(df, is.na(asistencia) | asistencia <= 100)
+
+
+#Columna de promedio previo
+((sum(df$promedio_previo > 10, na.rm = TRUE))/dim(df)[1])*100
+# Valores por encima de 10 representan el 14.1% de los datos
+summary(df$promedio_previo)
+hist(df$promedio_previo)
+
+
+# Columna de horas_estudio
+
+
+
+# Columna de carrera
+(((sum(is.na(df$carrera))))/dim(df)[1])*100 # Ver porcentaje de nulos
+# Ver promedio de puntaje_final por carrera para sacar un tipo de relacion entre ellas
+aggregate(puntaje_final ~ carrera, 
+          data = df, 
+          FUN = mean, 
+          na.rm = TRUE)
+# Al ver que no hay una relacion marcada entre ellas, se crea una nueva categoria
+df$carrera[is.na(df$carrera)] <- "not_registered"
 
 
 #Matriz de correlacion
-#selecciono variables cuantitativas
+#selecciono variables cuantitativashttp://127.0.0.1:45263/graphics/f55e4b74-6631-4315-9c55-045aff1527ac.png
 df_num <- df %>% select(horas_estudio, asistencia, promedio_previo,
                         horas_sueno, edad, uso_redes,
                         ingresos_familiares, puntaje_final)
@@ -116,6 +143,8 @@ ggcorrplot(R,
            type = "upper",
            lab = TRUE,
            colors = c("#6D9EC1", "white", "#E31246"))
+
+
 
 
 
