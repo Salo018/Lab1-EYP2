@@ -99,6 +99,7 @@ nulos_columna(df$promedio_previo, "promedio_previo")
 nulos_columna(df$estres, "estres")
 nulos_columna(df$carrera, "carrera")
 
+#Ver estadisticas basicas de todo el df
 summary(df)
 
 # Limpieza de valores fuera de rango 
@@ -116,11 +117,101 @@ hist(df$promedio_previo)
 
 
 # Columna de horas_estudio
+#Ver porcentaje de valores por encima del rango definido
+((sum(df$horas_estudio > 35, na.rm = TRUE))/dim(df)[1])*100
 
+
+ggplot(df, aes(x = horas_estudio)) +
+  geom_histogram(bins = 20) +
+  labs(title = "Distribución de Horas de Estudio",
+       x = "Horas de estudio",
+       y = "Frecuencia") +
+  theme_minimal()
+
+
+# Columna horas_sueño
+# Distribucion de las horas de sueño
+ggplot(df, aes(x = horas_sueno)) +
+  geom_histogram(bins = 5) +
+  labs(title = "Distribución de Horas de sueño",
+       x = "Horas de sueño",
+       y = "Frecuencia") +
+  theme_minimal()
+# Porcentaje de horas de sueño menores a 2 y mayores a 12
+((sum(df$horas_sueno < 2 | df$horas_sueno > 10, na.rm = TRUE))/dim(df)[1])*100
+# Al representar el 0.5% y ser valores tan extremos, se decidió eliminar estos registros
+#Como no hay menores a 2, solo eliminamos los mayores a 10
+df <- subset(df, is.na(horas_sueno) | horas_sueno < 10)
+
+# Columna edad
+# Distribucion de edades
+ggplot(df, aes(x = edad)) +
+  geom_histogram(bins = 10) +
+  labs(title = "Distribución de edades",
+       x = "Edad",
+       y = "Frecuencia") +
+  theme_minimal()
+# Porcentaje de edades menores a 15 y mayores a 30
+((sum(df$edad < 15 | df$edad > 30, na.rm = TRUE))/dim(df)[1])*100
+
+
+#Columna uso_redes
+# Porcentaje de valores menores a 0 y mayores a 24
+((sum(df$uso_redes < 0 | df$uso_redes > 24, na.rm = TRUE))/dim(df)[1])*100
+# Eliminar mayores a 24
+df <- subset(df, is.na(uso_redes) | uso_redes < 24)
+
+# Columna de estres
+# Ver distribucion de datos de estres
+ggplot(df, aes(x = estres)) +
+  geom_histogram(bins = 10) +
+  labs(title = "Distribución de datos de estres",
+       x = "estres",
+       y = "Frecuencia") +
+  theme_minimal()
+# Porcentaje de datos mayores a 10
+((sum(df$estres > 10, na.rm = TRUE))/dim(df)[1])*100
+boxplot(df$estres)
+
+# Analisis de media y mediana con todos los datos y solo entre 0 y 10 
+summary(df$estres) # Todos los valores 
+mean(df$estres[df$estres >= 0 & df$estres <= 10], na.rm = TRUE) # solo entre 0 y 10 
+median(df$estres[df$estres >= 0 & df$estres <= 10], na.rm = TRUE) # solo entre 0 y 10
+# Se vio que los outliers no estaban afectando tanto la distribucion
+# Entonces asumimos escala de 1 a 10 y los valores mayores a 10, se dejan en 10
+df$estres[df$estres > 10] <- 10
+
+
+# Columna edad
+# Ver distribucion de datos de edad
+ggplot(df, aes(x = edad)) +
+  geom_histogram(bins = 10) +
+  labs(title = "Distribución de datos de edad",
+       x = "estres",
+       y = "Frecuencia") +
+  theme_minimal()
+
+# Columna de promedio_previo
+# Ver distribucion de datos de edad
+ggplot(df, aes(x = promedio_previo)) +
+  geom_histogram(bins = 10) +
+  labs(title = "Distribución de datos de promedio_previo",
+       x = "estres",
+       y = "Frecuencia") +
+  theme_minimal()
 
 
 # Columna de carrera
 (((sum(is.na(df$carrera))))/dim(df)[1])*100 # Ver porcentaje de nulos
+# Ver grafico de distribucion de los datos con nulos
+df %>%
+  count(carrera) %>%
+  ggplot(aes(x = reorder(carrera, -n), y = n)) +
+  geom_bar(stat = "identity", fill = "#4C72B0") +
+  labs(title = "Distribución de estudiantes por carrera (incluyendo nulos)",
+       x = "Carrera",
+       y = "Frecuencia") +
+  theme_minimal()
 # Ver promedio de puntaje_final por carrera para sacar un tipo de relacion entre ellas
 aggregate(puntaje_final ~ carrera, 
           data = df, 
@@ -128,7 +219,6 @@ aggregate(puntaje_final ~ carrera,
           na.rm = TRUE)
 # Al ver que no hay una relacion marcada entre ellas, se crea una nueva categoria
 df$carrera[is.na(df$carrera)] <- "not_registered"
-
 
 #Matriz de correlacion
 #selecciono variables cuantitativashttp://127.0.0.1:45263/graphics/f55e4b74-6631-4315-9c55-045aff1527ac.png
@@ -145,14 +235,6 @@ ggcorrplot(R,
            colors = c("#6D9EC1", "white", "#E31246"))
 
 
-df %>%
-  count(carrera) %>%
-  ggplot(aes(x = reorder(carrera, -n), y = n)) +
-  geom_bar(stat = "identity", fill = "#4C72B0") +
-  labs(title = "Distribución de estudiantes por carrera (incluyendo nulos)",
-       x = "Carrera",
-       y = "Frecuencia") +
-  theme_minimal()
 
 
 
