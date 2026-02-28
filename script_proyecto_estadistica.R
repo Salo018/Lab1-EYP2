@@ -3,12 +3,13 @@ install.packages("ggplot2") #Visualizacion
 install.packages("naniar")  #Datos faltantes
 install.packages("corrplot") #Matriz de correlaciones
 install.packages("dplyr")    #Manejo de datos
-
+install.packages("ggcorrplot") #Visualizacion 
 
 #Se cargan las librerias 
 library(ggplot2)
 library(naniar)
 library(corrplot)
+library(ggcorrplot)
 library(dplyr)
 # Librerias para cargar datos
 library(readr)
@@ -100,6 +101,27 @@ nulos_columna(df$carrera, "carrera")
 
 
 summary(df)
+
+
+#Matriz de correlacion
+#selecciono variables cuantitativas
+df_num <- df %>% select(horas_estudio, asistencia, promedio_previo,
+                        horas_sueno, edad, uso_redes,
+                        ingresos_familiares, puntaje_final)
+
+# Maneja nulos automáticamente
+R <- cor(df_num, use = "complete.obs")
+#Define caracteristicas visuales de la matriz
+ggcorrplot(R,
+           type = "upper",
+           lab = TRUE,
+           colors = c("#6D9EC1", "white", "#E31246"))
+
+
+
+
+
+
 
 
 
