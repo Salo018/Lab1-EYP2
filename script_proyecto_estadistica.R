@@ -145,6 +145,16 @@ ggcorrplot(R,
            colors = c("#6D9EC1", "white", "#E31246"))
 
 
+df %>%
+  count(carrera) %>%
+  ggplot(aes(x = reorder(carrera, -n), y = n)) +
+  geom_bar(stat = "identity", fill = "#4C72B0") +
+  labs(title = "Distribución de estudiantes por carrera (incluyendo nulos)",
+       x = "Carrera",
+       y = "Frecuencia") +
+  theme_minimal()
+
+
 
 
 
