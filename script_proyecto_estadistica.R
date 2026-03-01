@@ -4,6 +4,9 @@ install.packages("naniar")  #Datos faltantes
 install.packages("corrplot") #Matriz de correlaciones
 install.packages("dplyr")    #Manejo de datos
 install.packages("ggcorrplot") #Visualizacion 
+install.packages("fastDummies")
+
+
 
 #Se cargan las librerias 
 library(ggplot2)
@@ -11,6 +14,7 @@ library(naniar)
 library(corrplot)
 library(ggcorrplot)
 library(dplyr)
+library(fastDummies)
 # Librerias para cargar datos
 library(readr)
 library(purrr)
@@ -344,13 +348,30 @@ boxplot(df$puntaje_final, main = "Boxplot Puntaje Final")
 boxplot.stats(df$puntaje_final)$out # Ver outliers del anterior boxplot 
 
 
-# Dicotomizacion de las columnas cualitativas genero, acceso_internet, trabaja, modalidad
+# Dicotomizacion de las columnas cualitativas 
+# La palabra dentro de las comillas se convierten en 0, cualquier otra en 0
+df$semestre <- as.numeric(df$semestre == "Sem2") # columna semestre
+df$genero <- as.numeric(df$genero == "male") # columna genero
+df$acceso_internet <- as.numeric(df$acceso_internet == "yes") # columna acceso_internet
+df$trabaja <- as.numeric(df$trabaja == "yes") # columna trabaja
+df$modalidad <- as.numeric(df$modalidad == "in_person") # columna modalidad
+# Como en carrera hay mas de 2 categorias, se aplica one-hot encoding
+df <- dummy_cols(df, select_columns = "carrera")
 
-df$genero <- as.numeric(df$genero == "male")
 
+# Excluir las dummies de carrera
+# Excluir carrera original y sus dummies
+# Excluir solo la columna original de carrera
+df_numericas <- df[, !names(df) %in% c("carrera", "puntaje_final")]
 
+# Calcular correlación
+correlacion <- cor(df_numericas)
+ggcorrplot(correlacion,
+           type = "upper",
+           lab = TRUE,
+           colors = c("#6D9EC1", "white", "#E31246"))
 
-
+unique(df$semestre)
 
 
 
