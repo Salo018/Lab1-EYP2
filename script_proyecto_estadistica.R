@@ -142,6 +142,11 @@ ggplot(df, aes(x = horas_sueno)) +
 # Al representar el 0.5% y ser valores tan extremos, se decidió eliminar estos registros
 #Como no hay menores a 2, solo eliminamos los mayores a 10
 df <- subset(df, is.na(horas_sueno) | horas_sueno < 10)
+# Imputacion de nulos con la mediana
+mediana_sueño <- median(df$horas_sueno, na.rm = TRUE) # Calcular la mediana
+# Imputacion de nulos con la mediana
+df$horas_sueno[is.na(df$horas_sueno)] <- mediana_sueño
+#sum(is.na(df$horas_sueno))
 
 # Columna edad
 # Distribucion de edades
@@ -160,6 +165,11 @@ ggplot(df, aes(x = edad)) +
 ((sum(df$uso_redes < 0 | df$uso_redes > 24, na.rm = TRUE))/dim(df)[1])*100
 # Eliminar mayores a 24
 df <- subset(df, is.na(uso_redes) | uso_redes < 24)
+# Imputacion de nulos uso_redes por mediana
+mediana_uso_redes <- median(df$uso_redes, na.rm = TRUE) # Calcular la mediana
+df$uso_redes[is.na(df$uso_redes)] <- mediana_uso_redes
+sum(is.na(df$uso_redes))
+
 
 # Columna de estres
 # Ver distribucion de datos de estres
@@ -201,6 +211,12 @@ ggplot(df, aes(x = promedio_previo)) +
   theme_minimal()
 
 
+# Columna de ingresos familiares
+mediana_ingresos <- median(df$ingresos_familiares, na.rm = TRUE) # Calcular la mediana
+# Imputacion de nulos con la mediana
+df$ingresos_familiares[is.na(df$ingresos_familiares)] <- mediana_ingresos
+#sum(is.na(df$ingresos_familiares))
+
 # Columna de carrera
 (((sum(is.na(df$carrera))))/dim(df)[1])*100 # Ver porcentaje de nulos
 # Ver grafico de distribucion de los datos con nulos
@@ -224,7 +240,7 @@ df$carrera[is.na(df$carrera)] <- "not_registered"
 #selecciono variables cuantitativashttp://127.0.0.1:45263/graphics/f55e4b74-6631-4315-9c55-045aff1527ac.png
 df_num <- df %>% select(horas_estudio, asistencia, promedio_previo,
                         horas_sueno, edad, uso_redes,
-                        ingresos_familiares, puntaje_final)
+                        ingresos_familiares, puntaje_final, estres)
 
 # Maneja nulos automáticamente
 R <- cor(df_num, use = "complete.obs")
@@ -236,16 +252,84 @@ ggcorrplot(R,
 
 
 
+#Grafico de dispercion para verificar la linealidad de las variables
+#(puntaje_final y horas_estudio)
+
+plot(df$puntaje_final, df$horas_estudio,
+     xlab="Puntaje final",
+     ylab="Horas estudio",
+     main = "Disperción entre puntaje final y horas de estudio",
+     col = "#5978D4", # azul con transparencia
+     cex = 0.9,
+)      
+
+abline(lm(horas_estudio ~ puntaje_final, data=df),
+       col="red", lwd = 2) 
+
+#Grafica 2: #Grafico de dispercion para verificar la linealidad de las variables
+#(puntaje_final y promedio_previo)
+
+plot(df$puntaje_final, df$promedio_previo,
+     xlab="Puntaje final",
+     ylab="promedio_previo",
+     main = "Disperción entre puntaje final y promedio_previo",
+     col = "#5978D4", # azul con transparencia
+     cex = 0.9,
+)      
+
+abline(lm(promedio_previo ~ puntaje_final, data=df),
+       col="red", lwd = 2)
+
+# Rellenar valores nulos de horas estudio respecto a puntaje_final
+modelo_horas_estudio <- lm(horas_estudio ~ puntaje_final, data = df)
+summary(modelo_horas_estudio)
+
+prediccion_horas_estudio <- predict(modelo_horas_estudio,
+                        newdata = df)
+# Aplicacion del anterior modelo de regresion lineal simple
+df$horas_estudio[is.na(df$horas_estudio)] <- prediccion_horas_estudio[is.na(df$horas_estudio)]
+sum(is.na(df$horas_estudio))
 
 
+# Rellenar valores nulos de promedio_previo respecto a puntaje_final
+modelo_prom_previo <- lm(promedio_previo ~ puntaje_final, data = df)
+summary(modelo_prom_previo)
+
+prediccion_prom_previo <- predict(modelo_prom_previo,
+                                    newdata = df)
+# Aplicacion del anterior modelo de regresion lineal simple
+df$promedio_previo[is.na(df$promedio_previo)] <- prediccion_prom_previo[is.na(df$promedio_previo)]
+sum(is.na(df$promedio_previo))
+summary(df$promedio_previo)
 
 
+# Ver distribucion de datos de asistencia
+ggplot(df, aes(x = asistencia)) +
+  geom_histogram(bins = 10) +
+  labs(title = "Distribución de datos de asistencia",
+       x = "asistencia",
+       y = "Frecuencia") +
+  theme_minimal()
 
+# Ver distribucion de datos de estres
+ggplot(df, aes(x = estres)) +
+  geom_histogram(bins = 10) +
+  labs(title = "Distribución de datos de estres",
+       x = "estres",
+       y = "Frecuencia") +
+  theme_minimal()
 
+# Columna de asistencia
+mediana_asistencia <- median(df$asistencia, na.rm = TRUE) # Calcular la mediana
+# Imputacion de nulos con la mediana
+df$asistencia[is.na(df$asistencia)] <- mediana_asistencia
+#sum(is.na(df$ingresos_familiares))
 
-
-
-
+# Columna de estres
+mediana_estres <- median(df$estres, na.rm = TRUE) # Calcular la mediana
+# Imputacion de nulos con la mediana
+df$estres[is.na(df$estres)] <- mediana_estres
+#sum(is.na(df$ingresos_familiares))
 
 
 
