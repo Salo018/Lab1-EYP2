@@ -17,6 +17,8 @@ library(purrr)
 library(dplyr)
 library(stringr)
 
+
+# Carga de datos
 # URL de cada csv
 urls <- c(
 "https://raw.githubusercontent.com/Salo018/Lab1-EYP2/refs/heads/main/Caso_1/rendimiento_2021_Sem1.csv",
@@ -34,6 +36,8 @@ urls <- c(
 # Combinar csv en un df
 lista_csv <- map(urls, read_csv)
 df <- bind_rows(lista_csv)
+
+# Desde la linea 40 hasta la linea 334 se hace EDA y limpieza. 
 
 # Ver valores unicos de una columna
 unique(df$genero)
@@ -330,6 +334,20 @@ mediana_estres <- median(df$estres, na.rm = TRUE) # Calcular la mediana
 # Imputacion de nulos con la mediana
 df$estres[is.na(df$estres)] <- mediana_estres
 #sum(is.na(df$ingresos_familiares))
+
+
+# Evaluacion de distribucion de la variable de respuesta 
+# Ver distribucion de datos de puntaje final
+hist(df$puntaje_final, main = "Distribución de puntaje final", col = "steelblue")
+
+boxplot(df$puntaje_final, main = "Boxplot Puntaje Final")
+boxplot.stats(df$puntaje_final)$out # Ver outliers del anterior boxplot 
+
+
+# Dicotomizacion de las columnas cualitativas genero, acceso_internet, trabaja, modalidad
+
+df$genero <- as.numeric(df$genero == "male")
+
 
 
 
