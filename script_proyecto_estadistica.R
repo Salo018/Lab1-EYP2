@@ -371,7 +371,23 @@ ggcorrplot(correlacion,
            lab = TRUE,
            colors = c("#6D9EC1", "white", "#E31246"))
 
-unique(df$semestre)
+# Obtener todos los pares de variables
+variables <- colnames(df_numericas)
+resultados <- data.frame()
 
+for (i in 1:(length(variables) - 1)) {
+  for (j in (i + 1):length(variables)) {
+    test <- cor.test(df_numericas[[i]], df_numericas[[j]])
+    resultados <- rbind(resultados, data.frame(
+      Variable1   = variables[i],
+      Variable2   = variables[j],
+      Correlacion = round(test$estimate, 3),
+      P_valor     = round(test$p.value, 4)
+    ))
+  }
+}
 
+# Filtrar solo los pares con p-valor < 0.05
+significativos <- resultados[resultados$P_valor < 0.05, ]
+print(significativos)
 
