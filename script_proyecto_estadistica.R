@@ -360,9 +360,11 @@ df <- dummy_cols(df, select_columns = "carrera")
 
 
 # Excluir las dummies de carrera
-# Excluir carrera original y sus dummies
-# Excluir solo la columna original de carrera
-df_numericas <- df[, !names(df) %in% c("carrera", "puntaje_final")]
+# Excluir columnas cualitativas y las de one-hot encoding
+df_numericas <- df[, !names(df) %in% c("carrera", "puntaje_final", "semestre", 
+                                       "genero", "modalidad", "trabaja", "acceso_internet",
+                                       "carrera_Business", "carrera_Data", "carrera_Engineering",
+                                       "carrera_not_registered", "carrera_Computer Science")]
 
 # Calcular correlación
 correlacion <- cor(df_numericas)
@@ -387,7 +389,40 @@ for (i in 1:(length(variables) - 1)) {
   }
 }
 
+# Se asume un alpha = 0.05
 # Filtrar solo los pares con p-valor < 0.05
 significativos <- resultados[resultados$P_valor < 0.05, ]
 print(significativos)
+
+#Crear copia del df
+df_copia <- subset(df, select = -c(carrera))
+
+# Interacciones 
+variables <- colnames(df_numericas)
+
+for (i in 1:(length(variables) - 1)) {
+  for (j in (i + 1):length(variables)) {
+    nombre_col <- paste0(variables[i], "_x_", variables[j])
+    df_copia[[nombre_col]] <- df_numericas[[i]] * df_numericas[[j]]
+  }
+}
+
+# Modelo con todas las variables
+modelo <- lm(puntaje_final ~ ., data = df_copia)
+
+# Extraer coeficientes del summary
+coeficientes <- summary(modelo)$coefficients
+
+# Filtrar solo los p-valores mayores a 0.05 
+no_significativos <- coeficientes[coeficientes[, 4] > 0.05, ]
+
+print(round(no_significativos, 4))
+
+
+
+
+
+
+
+
 
