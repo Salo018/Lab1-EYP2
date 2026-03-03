@@ -136,6 +136,43 @@ ggplot(df, aes(x = horas_estudio)) +
        y = "Frecuencia") +
   theme_minimal()
 
+# Calcular límites con Rango intercuartilico 
+Q1 <- quantile(df$horas_estudio, 0.25, na.rm = TRUE)
+Q3 <- quantile(df$horas_estudio, 0.75, na.rm = TRUE)
+IQR <- Q3 - Q1
+
+limite_superior <- Q3 + 1.5 * IQR
+limite_inferior <- Q1 - 1.5 * IQR
+
+cat("Límite superior:", limite_superior, "\n")
+cat("Límite inferior:", limite_inferior, "\n")
+
+# Ver cuántos outliers tenemos
+sum(df$horas_estudio > limite_superior, na.rm = TRUE)
+
+# Ver los valores exactos
+df$horas_estudio[df$horas_estudio > limite_superior]
+
+# Porcentaje de outliers
+total_outliers <- sum(df$horas_estudio > limite_superior, na.rm = TRUE)
+total_datos <- sum(!is.na(df$horas_estudio))
+porcentaje <- (total_outliers / total_datos) * 100
+
+cat("Porcentaje:", round(porcentaje, 2), "%\n")
+
+nrow(df)
+
+
+# Reemplazar outliers por el limite intercuartilico superior 
+df$horas_estudio <- pmin(df$horas_estudio, limite_superior)
+
+ggplot(df, aes(x = horas_estudio)) +
+  geom_histogram(bins = 20) +
+  xlim(0, 25) +
+  labs(title = "Distribución de Horas de Estudio",
+       x = "Horas de estudio",
+       y = "Frecuencia") +
+  theme_minimal()
 
 # Columna horas_sueño
 # Distribucion de las horas de sueño
@@ -309,6 +346,7 @@ prediccion_prom_previo <- predict(modelo_prom_previo,
 df$promedio_previo[is.na(df$promedio_previo)] <- prediccion_prom_previo[is.na(df$promedio_previo)]
 sum(is.na(df$promedio_previo))
 summary(df$promedio_previo)
+
 
 
 # Ver distribucion de datos de asistencia
