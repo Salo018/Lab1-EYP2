@@ -22,15 +22,15 @@ info <- image_info(image)
 print(info)
 
 #Convertir a matriz de pixeles 
-img_matrix <- as.integer(image_data(img, channels = "rgb"))
+image_matrix <- as.integer(image_data(image, channels = "rgb"))
 
 # Ver dimensiones
-dim(img_matrix)
+dim(image_matrix)
 
 # Separar los 3 colores y convertir a escala 0-1
-R <- img_matrix[,,1] / 255  # canal rojo
-G <- img_matrix[,,2] / 255  # canal verde
-B <- img_matrix[,,3] / 255  # canal azul
+R <- image_matrix[,,1] / 255  # canal rojo
+G <- image_matrix[,,2] / 255  # canal verde
+B <- image_matrix[,,3] / 255  # canal azul
 
 
 
