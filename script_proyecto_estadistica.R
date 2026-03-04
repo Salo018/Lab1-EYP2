@@ -475,3 +475,30 @@ sum(is.na(df_imputado$carrera))
 
 sum(is.na(df))
 
+
+# Grafico de Braras: conteo despues de la imputacion por K vecinos mas cercanos
+df_original <- df %>%
+  count(carrera) %>%
+  mutate(dataset = "Antes de imputar")
+
+df_post_conteo <- df_imputado %>%
+  count(carrera) %>%
+  mutate(dataset = "Después de imputar")
+
+# Unir
+df_comparacion <- bind_rows(df_original, df_post_conteo)
+
+# Gráfico
+ggplot(df_comparacion, aes(x = carrera, y = n, fill = dataset)) +
+  geom_bar(stat = "identity", position = "dodge", alpha = 0.8) +
+  geom_text(aes(label = n), position = position_dodge(width = 0.9), 
+            vjust = -0.5, size = 3) +
+  labs(title = "Carrera antes y después de imputar por K-NN",
+       x = "Carrera",
+       y = "Frecuencia",
+       fill = "") +
+  theme_minimal() +
+  scale_fill_manual(values = c("#90EE90", "#C8A2C8"))
+
+
+
