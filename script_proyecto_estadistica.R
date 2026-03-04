@@ -4,8 +4,8 @@ install.packages("naniar")  #Datos faltantes
 install.packages("corrplot") #Matriz de correlaciones
 install.packages("dplyr")    #Manejo de datos
 install.packages("ggcorrplot") #Visualizacion 
-install.packages("fastDummies")
-
+install.packages("fastDummies") # One-hot encoding
+install.packages("VIM") # knn
 
 
 #Se cargan las librerias 
@@ -15,6 +15,7 @@ library(corrplot)
 library(ggcorrplot)
 library(dplyr)
 library(fastDummies)
+library(VIM)
 # Librerias para cargar datos
 library(readr)
 library(purrr)
@@ -77,7 +78,7 @@ df$modalidad<- tolower(df$modalidad)
 df$modalidad <- str_replace(df$modalidad, "presencial", "in_person") 
 
 
-#' Se crea la siguiente funcion para sacar el numero de negativos en cualquier columna
+# Se crea la siguiente funcion para sacar el numero de negativos en cualquier columna
 negativos_columna <- function(columna, nombre = "columna"){
   negativos <- sum(columna < 0, na.rm = TRUE)
   
@@ -278,8 +279,18 @@ aggregate(puntaje_final ~ carrera,
           data = df, 
           FUN = mean, 
           na.rm = TRUE)
-# Al ver que no hay una relacion marcada entre ellas, se crea una nueva categoria
-df$carrera[is.na(df$carrera)] <- "not_registered"
+# Al ver que no hay una relacion marcada entre ellas, se busca otro metodo de imputacion
+# Para esto se elegió el metodo knn (K-Nearest Neighbors o K-Vecinos más Cercanos)
+df_imputado <- kNN(df, 
+                   variable = "carrera",  # solo imputar carrera
+                   k = 5)                 # usa los 5 registros más cercanos
+
+# Agregar una columna que despues se elimina
+df_imputado <- df_imputado[, !grepl("_imp", names(df_imputado))]
+
+table(df_imputado$carrera)
+
+
 
 #Matriz de correlacion
 #selecciono variables cuantitativashttp://127.0.0.1:45263/graphics/f55e4b74-6631-4315-9c55-045aff1527ac.png
@@ -456,11 +467,11 @@ no_significativos <- coeficientes[coeficientes[, 4] > 0.05, ]
 
 print(round(no_significativos, 4))
 
+(sum(df$carrera == "not_registered")/dim(df)[1])*100
+table(df$carrera)
 
 
+sum(is.na(df_imputado$carrera))
 
-
-
-
-
+sum(is.na(df))
 
