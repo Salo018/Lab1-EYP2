@@ -9,7 +9,7 @@ library(magick)
 # Carga de datos
 # URL de github 
 df_imagenes <- read.csv("https://raw.githubusercontent.com/Salo018/Lab1-EYP2/refs/heads/main/Caso_2/labels_imagenes.csv")
-# Pasar variable de respuesta a 0 y 1
+# Pasar variable de respuesta a 0 y 1 (No conforme= 1, Conforme= 0)
 df_imagenes$respuesta <- as.numeric(df_imagenes$respuesta == "No conforme") 
 
 # Carga de todas las imagenes
@@ -153,7 +153,8 @@ df_imagenes <- df_imagenes[, c("imagen_id", "respuesta",
                                "area_0",         "area_1",         "area_2",
                                "rugosidad_0",    "rugosidad_1",    "rugosidad_2",
                                "variacion_verde_0", "variacion_verde_1", "variacion_verde_2")]
-
-
+# Verificar el balance 
+cat("Conforme (0):", mean(df_imagenes$respuesta == 0) * 100, "%\n")
+cat("No conforme (1):", mean(df_imagenes$respuesta == 1) * 100, "%\n")
 
 
