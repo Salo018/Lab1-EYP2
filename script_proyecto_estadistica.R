@@ -308,6 +308,7 @@ ggcorrplot(R,
 df_imputado <- kNN(df_imputado, 
                    variable = "promedio_previo",  # solo imputar promedio_previo
                    k = 5)  # usa los 5 registros más cercanos
+df_imputado$promedio_previo_imp <- NULL
 
 # Columna de promedio_previo
 # Ver distribucion de datos de promedio_previo
