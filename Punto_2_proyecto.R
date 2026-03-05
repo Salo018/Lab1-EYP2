@@ -165,6 +165,22 @@ cat("Conforme (0):", mean(df_imagenes$respuesta == 0) * 100, "%\n")
 cat("No conforme (1):", mean(df_imagenes$respuesta == 1) * 100, "%\n")
 
 
+# Verificar el balance con grafica
+conteo <- as.data.frame(table(df_imagenes$respuesta))
+conteo$porcentaje <- round(conteo$Freq / nrow(df_imagenes) * 100, 1)
+conteo$etiqueta <- c("Conforme", "No conforme")
+
+ggplot(conteo, aes(x = etiqueta, y = Freq, fill = etiqueta)) +
+  geom_bar(stat = "identity") +
+  geom_text(aes(label = paste0(porcentaje, "%")), vjust = -0.5) +
+  scale_fill_manual(values = c("#FFD1DC", "#E6E6FA")) +
+  labs(title = "Balance de clases",
+       x     = "Clase",
+       y     = "Frecuencia") +
+  theme_minimal() +
+  theme(legend.position = "none")
+
+
 #Distribucion de variables 
 
 par(mfrow = c(2, 3))  #  graficos para imagenes_0
@@ -274,7 +290,7 @@ modelo_logistico2 <- glm(respuesta ~ brillo_medio_2 + contraste_2 +
 
 summary(modelo_logistico2)
 vif(modelo_logistico2)
-
+#Realizamos un modelo por cada categoria y elegimos la que tiene valor VIF mas bajo 
 #Modelo de regresion logistica 3: Brillo medio 
 modelo_logistico3 <- glm(respuesta ~ brillo_medio_0 + brillo_medio_1 + 
                            brillo_medio_2,family = binomial (link = logit),
@@ -334,6 +350,7 @@ for (v in variables) {
 
 
 #Modelo de regresion logistica 8: Juntas
+#Las metricas del p valor de cada variable son mejores pero el valor de VIF sigue siendo muy alto
 modelo_logistico8 <- glm(respuesta ~ brillo_medio_0 + contraste_0 + 
                            area_0 ,family = binomial (link = logit),
                          data = df_imagenes)
@@ -364,7 +381,14 @@ modelo_logistico10 <- glm(respuesta ~  area_2 + contraste_2 ,
 summary(modelo_logistico10)
 vif(modelo_logistico10)
 
-#Modelo 11
+#Modelo 11: FINAL 
+#se descartaron los modelos que incluían rugosidad y variacion_verde por causar
+#cuasi-separación perfecta. 
+#Los modelos con tres o más predictores presentaron vif superiores a 300, 
+#dejando ver colinealidad entre las variables de imagen.
+#El Modelo 11, con area_0 y contraste_0, lo elegimos como modelo
+#final por presentar el menor AIC 1412.1 y BIC 1427.7 entre los modelos válidos,
+#ademas tenia un VIF de 1.03 y convergencia de 5 iteraciones,
 
 modelo_logistico11 <- glm(respuesta ~  area_0 + contraste_0 ,
                           family = binomial(link = "logit"),
@@ -374,11 +398,60 @@ summary(modelo_logistico11)
 vif(modelo_logistico11)
 
 
+
 #COMPROBAR SUPUESTO DE LINEALIDAD
 #Probar la linealidad del logit (Box-Tidwell)
 boxTidwell(respuesta ~ area_0 + contraste_0, data = df_imagenes)
-#Contraste no cumple debe transformarse 
+#Contraste no cumple debe transformarse con log
 df_imagenes$log_contraste_0 <- log(df_imagenes$contraste_0)
+
+
+
+
+#Comprobar metricas(AIC Y BIC)
+
+AIC(modelo_logistico1, modelo_logistico2,modelo_logistico3,modelo_logistico4,modelo_logistico5,modelo_logistico6, 
+    modelo_logistico7, modelo_logistico8, modelo_logistico9, modelo_logistico10, modelo_logistico11)
+
+BIC(modelo_logistico1, modelo_logistico2,modelo_logistico3,modelo_logistico4,modelo_logistico5,modelo_logistico6, 
+    modelo_logistico7, modelo_logistico8, modelo_logistico9, modelo_logistico10, modelo_logistico11)
+
+
+#Metricas modelo final
+AIC(modelo_logistico11)
+BIC(modelo_logistico11)
+
+
+# Matriz de confusión
+predicciones_p  <- predict(modelo_logistico11, type = "response")
+predicciones_finales <- ifelse(predicciones_p > 0.5, 1, 0)
+
+# Matriz de confusión
+matriz_c <- table(Predicho = predicciones_finales, Real = df_imagenes$respuesta)
+matriz_c
+
+
+#Metricas de exactitud, sensibilidad, especificidad y precision 
+VP <- 322; VN <- 658; FP <- 117; FN <- 243
+n  <- VP + VN + FP + FN  # 1340
+
+exactitud   <- (VP + VN) / n    
+sensibilidad <- VP / (VP + FN)    
+especificidad <- VN / (VN + FP)     
+precision    <- VP / (VP + FP)  
+
+#Metricas de clasificacion del modelo final 
+#El modelo clasifica correctamente el 72.4% de los productos
+cat("Exactitud:     ", round(exactitud,    4), "(", round(exactitud    * 100, 2), "%)\n")
+#El modelo detecta el 57% de los productos no conformes reales
+cat("Sensibilidad:  ", round(sensibilidad, 4), "(", round(sensibilidad * 100, 2), "%)\n")
+#El modelo identifica correctamente el 84.9% de los productos conformes
+cat("Especificidad: ", round(especificidad,4), "(", round(especificidad* 100, 2), "%)\n")
+cat("Precisión:     ", round(precision,    4), "(", round(precision    * 100, 2), "%)\n")
+
+
+
+
 
 
 
