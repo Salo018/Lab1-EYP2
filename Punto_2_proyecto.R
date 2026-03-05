@@ -230,11 +230,7 @@ for (v in variables) {
 # Variable respuesta: respuesta (0 = Conforme, 1 = No conforme)
 # Variables predictoras: las 15 metricas extraidas de las imagenes
 
-modelo_logistico1<- glm(respuesta ~ brillo_medio_0 + brillo_medio_1 + brillo_medio_2 +
-                          contraste_0    + contraste_1    + contraste_2    +
-                          area_0         + area_1         + area_2         +
-                          rugosidad_0    + rugosidad_1    + rugosidad_2    +
-                          variacion_verde_0 + variacion_verde_1 + variacion_verde_2,
+modelo_logistico1<- glm(respuesta ~ . - imagen_id,
                         family = binomial(link = logit),
                         data   = df_imagenes)
 
