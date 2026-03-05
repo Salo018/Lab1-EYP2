@@ -123,7 +123,7 @@ df <- subset(df, is.na(asistencia) | asistencia <= 100)
 # Valores por encima de 10 representan el 14.1% de los datos
 summary(df$promedio_previo)
 hist(df$promedio_previo)
-# Nose alteraron datos de la columna
+# No se alteraron datos de la columna
 
 
 # Columna de horas_estudio
@@ -140,17 +140,6 @@ ggplot(df, aes(x = horas_estudio)) +
 
 #Eliminar registro outlier de 86.717804 horas de estudio 
 df <- subset(df, is.na(horas_estudio) | horas_estudio <= 70)
-
-
-
-
-ggplot(df, aes(x = horas_estudio)) +
-  geom_histogram(bins = 20) +
-  xlim(0, 25) +
-  labs(title = "Distribución de Horas de Estudio",
-       x = "Horas de estudio",
-       y = "Frecuencia") +
-  theme_minimal()
 
 
 # Columna horas_sueño
@@ -231,11 +220,11 @@ ggplot(df, aes(x = edad)) +
   theme_minimal()
 
 # Columna de promedio_previo
-# Ver distribucion de datos de edad
+# Ver distribucion de datos de promedio_previo
 ggplot(df, aes(x = promedio_previo)) +
   geom_histogram(bins = 10) +
   labs(title = "Distribución de datos de promedio_previo",
-       x = "estres",
+       x = "promedio_previo",
        y = "Frecuencia") +
   theme_minimal()
 
@@ -303,7 +292,7 @@ table(df_imputado$carrera)
 #selecciono variables cuantitativashttp://127.0.0.1:45263/graphics/f55e4b74-6631-4315-9c55-045aff1527ac.png
 df_num <- df_imputado %>% select(horas_estudio, asistencia, promedio_previo,
                         horas_sueno, edad, uso_redes,
-                        ingresos_familiares, puntaje_final, estres)
+                        ingresos_familiares, estres)
 
 # Maneja nulos automáticamente
 R <- cor(df_num, use = "complete.obs")
@@ -315,51 +304,32 @@ ggcorrplot(R,
 
 
 
-#Grafico de dispercion para verificar la linealidad de las variables
-#(puntaje_final y horas_estudio)
+# Se utiliza el metodo knn pare rellenar nulos de promedio_previo
+df_imputado <- kNN(df_imputado, 
+                   variable = "promedio_previo",  # solo imputar promedio_previo
+                   k = 5)  # usa los 5 registros más cercanos
 
-plot(df_imputado$puntaje_final, df_imputado$horas_estudio,
-     xlab="Puntaje final",
-     ylab="Horas estudio",
-     main = "Disperción entre puntaje final y horas de estudio",
-     col = "#5978D4", # azul con transparencia
-     cex = 0.9,
-)      
+# Columna de promedio_previo
+# Ver distribucion de datos de promedio_previo
+ggplot(df, aes(x = promedio_previo)) +
+  geom_histogram(bins = 10) +
+  labs(title = "Distribución de datos de promedio_previo",
+       x = "promedio_previo",
+       y = "Frecuencia") +
+  theme_minimal()
 
-abline(lm(horas_estudio ~ puntaje_final, data=df_imputado),
-       col="red", lwd = 2) 
-
-#Grafica 2: #Grafico de dispercion para verificar la linealidad de las variables
-#(puntaje_final y promedio_previo)
-
-plot(df_imputado$puntaje_final, df_imputado$promedio_previo,
-     xlab="Puntaje final",
-     ylab="promedio_previo",
-     main = "Disperción entre puntaje final y promedio_previo",
-     col = "#5978D4", # azul con transparencia
-     cex = 0.9,
-)      
-
-abline(lm(promedio_previo ~ puntaje_final, data=df_imputado),
-       col="red", lwd = 2)
-
-
-
-#COMPARACION DE MODELOS PARA LA IMPUTACION DE horas_estudio
-
-#Probamos el modelo de regresion lineal simple
-# Rellenar valores nulos de horas estudio respecto a puntaje_final
-modelo_horas_simple <- lm(horas_estudio ~ puntaje_final, data = df_imputado)
+# Rellenar valores nulos de horas estudio respecto a promedio_previo
+modelo_horas_simple <- lm(horas_estudio ~ promedio_previo, data = df_imputado)
 summary(modelo_horas_simple)
 
 ##Probamos el modelo de regresion lineal simple con raiz cuadrada 
-modelo_horas_raiz <- lm(sqrt(horas_estudio) ~ puntaje_final, data = df_imputado)
+modelo_horas_raiz <- lm(sqrt(horas_estudio) ~ promedio_previo, data = df_imputado)
 summary(modelo_horas_raiz)
 
 #Elegimos el modelo de regresion lineal simple con raiz cuadrada: Predecir valores en el df_imputado
 #Se aplicó transformación de raiz cuadrada a horas_estudio 
 #para corregir asimetría y reducir la influencia de outliers,
-#mejorando el R² ajustado de 0.589 a 0.686
+#mejorando el R^2 ajustado de 0.472 a 0.627
 predicciones_raiz <- predict(modelo_horas_raiz, newdata = df_imputado)
 
 # Revertir la raiz cuadrada de las predicciones
@@ -372,26 +342,12 @@ sum(is.na(df_imputado$horas_estudio))
 
 #Grafico de disperción 
 
-plot(df_imputado$puntaje_final, df_imputado$horas_estudio,
-     xlab="Puntaje final",
+plot(df_imputado$promedio_previo, df_imputado$horas_estudio,
+     xlab="promedio previo",
      ylab="Horas estudio",
-     main = "Disperción entre puntaje final y horas de estudio",
+     main = "Disperción entre promedio previo y horas de estudio",
      col = "#5978D4", # azul con transparencia
      cex = 0.9)      
-
-
-
-
-# Rellenar valores nulos de promedio_previo respecto a puntaje_final
-modelo_prom_previo <- lm(promedio_previo ~ puntaje_final, data = df_imputado)
-summary(modelo_prom_previo)
-
-prediccion_prom_previo <- predict(modelo_prom_previo,
-                                    newdata = df_imputado)
-# Aplicacion del anterior modelo de regresion lineal simple
-df_imputado$promedio_previo[is.na(df_imputado$promedio_previo)] <- prediccion_prom_previo[is.na(df_imputado$promedio_previo)]
-sum(is.na(df_imputado$promedio_previo))
-summary(df_imputado$promedio_previo)
 
 
 
@@ -439,16 +395,18 @@ df_imputado$genero <- as.numeric(df_imputado$genero == "male") # columna genero
 df_imputado$acceso_internet <- as.numeric(df_imputado$acceso_internet == "yes") # columna acceso_internet
 df_imputado$trabaja <- as.numeric(df_imputado$trabaja == "yes") # columna trabaja
 df_imputado$modalidad <- as.numeric(df_imputado$modalidad == "in_person") # columna modalidad
-# Como en carrera hay mas de 2 categorias, se aplica one-hot encoding
+# Como en carrera y año hay mas de 2 categorias, se aplica one-hot encoding
 df_imputado <- dummy_cols(df_imputado, select_columns = "carrera")
+df_imputado <- dummy_cols(df_imputado, select_columns = "anio")
 
 
-# Excluir las dummies de carrera
+# Excluir las dummies de carrera y año
 # Excluir columnas cualitativas y las de one-hot encoding
 df_numericas <- df_imputado[, !names(df_imputado) %in% c("carrera", "puntaje_final", "semestre", 
                                        "genero", "modalidad", "trabaja", "acceso_internet",
                                        "carrera_Business", "carrera_Data", "carrera_Engineering",
-                                        "carrera_Computer_Science")]
+                                        "carrera_Computer_Science", "año", "anio_2021", "anio_2022",
+                                       "anio_2023","anio_2024","anio_2025")]
 
 # Calcular correlación
 correlacion <- cor(df_numericas)
@@ -479,47 +437,48 @@ significativos <- resultados[resultados$P_valor < 0.05, ]
 print(significativos)
 
 #Crear copia del df_imputado
-df_copia <- subset(df_imputado, select = -c(carrera))
+df_copia <- subset(df_imputado, select = -c(carrera, anio))
+
+# Se eliminan las variables cualitativas
+df_imputado$carrera <- NULL
+df_imputado$anio <- NULL
+
+# Para solucionar el problema de multicolinealidad perfecta 
+# Se eliminan una de las variables dummy en carrera y año
+# En este caso van a ser carrera
+df_imputado$carrera_Business <- NULL
+df_imputado$anio_2022 <- NULL
+
+
 
 # Interacciones 
-variables <- colnames(df_copia)
+variables <- colnames(df_imputado)
 
 for (i in 1:(length(variables) - 1)) {
   for (j in (i + 1):length(variables)) {
     nombre_col <- paste0(variables[i], "_x_", variables[j])
-    df_imputado[[nombre_col]] <- df_copia[[i]] * df_copia[[j]]
+    df_imputado[[nombre_col]] <- df_imputado[[i]] * df_imputado[[j]]
   }
 }
 
-#Eliminar columna de carrera en df_imputado 
-df_imputado$carrera <- NULL
+# Eliminar interacciones entre dummies de misma variable
+# Ya que esto crea multicolinealidad perfecta
+col_carrera <- grep("carrera_.*_x_carrera_", names(df_imputado), value = TRUE)
+col_anio <- grep("anio_.*_x_anio_", names(df_imputado), value = TRUE)
 
-# Para solucionar el problema de multicolinealidad perfecta entre variables dummy
-# Las interacciones de dummy van a ser perfectas entonces por eso se eliminan
-cols_eliminar <- grep("carrera_.*_x_carrera_", names(df_imputado), value = TRUE)
+# Verificar cuales son antes de eliminar
+print(col_carrera)
+print(col_anio)
 
-# Verificar cuales son
-print(cols_eliminar)
+# Eliminar del dataframe
+df_imputado <- df_imputado[, !names(df_imputado) %in% c(col_carrera, col_anio)]
 
-# Eliminarlas del dataframe
-df_imputado <- df_imputado[, !names(df_imputado) %in% cols_eliminar]
 
 # Modelo con todas las variables
 modelo <- lm(puntaje_final ~ ., data = df_imputado)
 
-# Se deja la categoria bussiness de carrera como referencia
-vars_limpias <- setdiff(names(coef(modelo)), c("(Intercept)", "carrera_Business"))
-
-formula_limpia <- as.formula(paste("puntaje_final ~", 
-                                   paste(vars_limpias, collapse = " + ")))
-
-# modelo
-modelo_limpio <- lm(formula_limpia, data = df_imputado)
-
-# Verificar que ya no haya NAs
-coefs_na <- coef(modelo_limpio)[is.na(coef(modelo_limpio))]
+coefs_na <- coef(modelo)[is.na(coef(modelo))]
 print(coefs_na)
-
 
 # Funcion para quitar variables de VIF mayores a un valor definido
 remueve_VIF_grande <- function(modelo, u){ 
@@ -562,13 +521,24 @@ remueve_VIF_grande <- function(modelo, u){
   return(lista_modelos)
 }
 
+
 #Aplicar la funcion para quitar VIF mayores a 10
-lista_modelos <- remueve_VIF_grande(modelo_limpio, u = 10)
+lista_modelos <- remueve_VIF_grande(modelo, u = 10)
 
-coefs <- coef(modelo)
-coefs[is.na(coefs)]
+# Comparacion de los modelos
+
+# Modelos que se guardaron
+length(lista_modelos)
+# Sacar el modelo final (ultimo de la lista)
+modelo_final <- lista_modelos[[length(lista_modelos)]]
+#Mirar VIF del modelo
+vifs_modelo_final <- vif(modelo_final)
+max(vifs_modelo_final)
+
+summary(modelo_final)
 
 
+lista_modelos[[1]]
 
 
 
