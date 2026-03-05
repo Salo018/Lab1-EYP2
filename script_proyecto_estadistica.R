@@ -562,8 +562,7 @@ lista_modelos <- remueve_VIF_grande(modelo_limpio, u = 10)
 
 
 
-coefs <- coef(modelo)
-coefs[is.na(coefs)]
+
 
 
 
