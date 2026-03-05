@@ -6,7 +6,9 @@ install.packages("dplyr")    #Manejo de datos
 install.packages("ggcorrplot") #Visualizacion 
 install.packages("fastDummies") # One-hot encoding
 install.packages("VIM") # knn
-
+install.packages("randtests") 
+install.packages("sandwich")
+install.packages("lmtest")
 
 #Se cargan las librerias 
 library(ggplot2)
@@ -21,6 +23,9 @@ library(readr)
 library(purrr)
 library(dplyr)
 library(stringr)
+library(randtests)
+library(sandwich)
+library(lmtest)
 
 
 # Carga de datos
@@ -304,6 +309,9 @@ ggcorrplot(R,
 
 
 
+
+
+
 # Se utiliza el metodo knn pare rellenar nulos de promedio_previo
 df_imputado <- kNN(df_imputado, 
                    variable = "promedio_previo",  # solo imputar promedio_previo
@@ -482,38 +490,53 @@ coefs_na <- coef(modelo)[is.na(coef(modelo))]
 print(coefs_na)
 
 # Funcion para quitar variables de VIF mayores a un valor definido
-remueve_VIF_grande <- function(modelo, u){ 
-  require(car)
-  # extrae el dataframe
+remueve_VIF_grande <- function(modelo, u, vars_originales){ 
   data <- modelo$model
-  # Calcula todos los VIF
   all_vifs <- car::vif(modelo)
-  # extraer el nombre de todas las variables X 
   names_all <- names(all_vifs)
-  # extraer el nombre de la variables y 
   dep_var <- all.vars(formula(modelo))[1]
   
-  # Lista para guardar todos los modelos intermedios
   lista_modelos <- list()
   lista_modelos[["modelo_inicial"]] <- modelo
   iteracion <- 1
   
-  # Remover las variables con  VIF > u 
-  # y reestimar el modelo con las otras variables
-  
   while(any(all_vifs > u)){
-    # elimina variable con max vif
-    var_max_vif <- names(which(all_vifs == max(all_vifs)))
-    # remueve la variable
+    # Ordenar VIFs de mayor a menor
+    vifs_ordenados <- sort(all_vifs, decreasing = TRUE)
+    
+    # Buscar primero una interaccion con VIF alto (que contenga "_x_")
+    var_max_vif <- NULL
+    for(v in names(vifs_ordenados)){
+      if(grepl("_x_", v)){
+        var_max_vif <- v
+        break
+      }
+    }
+    
+    # Si no hay interacciones con VIF alto, buscar en variables originales
+    # pero solo las que no esten en vars_originales
+    if(is.null(var_max_vif)){
+      for(v in names(vifs_ordenados)){
+        if(!(v %in% vars_originales)){
+          var_max_vif <- v
+          break
+        }
+      }
+    }
+    
+    # Si todas son originales protegidas, detener el bucle
+    if(is.null(var_max_vif)){
+      message("Solo quedan variables originales con VIF alto, no se eliminan mas")
+      break
+    }
+    
+    # Eliminar la variable seleccionada
     names_all <- names_all[!(names_all) %in% var_max_vif]
-    # nueva fórmula
     myForm <- as.formula(paste(paste(dep_var, "~ "),
                                paste(names_all, collapse=" + "), sep=""))
-    # creando el nuevo modelo con nueva fórmula
     modelo.prueba <- lm(myForm, data = data)
     all_vifs <- car::vif(modelo.prueba)
     
-    # Guardar cada modelo intermedio con su iteracion
     nombre <- paste0("modelo_iter_", iteracion)
     lista_modelos[[nombre]] <- modelo.prueba
     iteracion <- iteracion + 1
@@ -524,7 +547,15 @@ remueve_VIF_grande <- function(modelo, u){
 
 
 #Aplicar la funcion para quitar VIF mayores a 10
-lista_modelos <- remueve_VIF_grande(modelo, u = 10)
+vars_originales <- c("semestre", "horas_estudio", "asistencia",
+                     "promedio_previo", "horas_sueno", "edad", "estres",
+                     "uso_redes", "ingresos_familiares", "genero",
+                     "acceso_internet", "trabaja", "modalidad",
+                     "carrera_Computer_Science", "carrera_Data", 
+                     "carrera_Engineering","anio_2021", "anio_2023", 
+                     "anio_2024", "anio_2025")
+
+lista_modelos <- remueve_VIF_grande(modelo, u = 10, vars_originales = vars_originales)
 
 # Comparacion de los modelos
 
@@ -538,13 +569,136 @@ max(vifs_modelo_final)
 
 summary(modelo_final)
 
+# Eliminar variables con valor-p mayores a 0.05
 
-lista_modelos[[1]]
+remueve_pvalor <- function(modelo, umbral = 0.05){
+  data <- modelo$model
+  dep_var <- all.vars(formula(modelo))[1]
+  
+  lista_modelos <- list()
+  lista_modelos[["modelo_inicial"]] <- modelo
+  iteracion <- 1
+  
+  while(TRUE){
+    coefs <- summary(modelo)$coefficients
+    # Excluir intercepto
+    coefs <- coefs[rownames(coefs) != "(Intercept)", , drop = FALSE]
+    
+    # Encontrar la variable con mayor p-valor
+    var_max_pvalor <- rownames(coefs)[which.max(coefs[, 4])]
+    
+    # Si el mayor p-valor es menor al umbral, detener
+    if(max(coefs[, 4]) <= umbral) break
+    
+    # Eliminar esa variable
+    names_all <- rownames(coefs)[rownames(coefs) != var_max_pvalor]
+    myForm <- as.formula(paste(dep_var, "~", paste(names_all, collapse = " + ")))
+    modelo <- lm(myForm, data = data)
+    
+    nombre <- paste0("modelo_iter_", iteracion)
+    lista_modelos[[nombre]] <- modelo
+    iteracion <- iteracion + 1
+  }
+  
+  return(lista_modelos)
+}
+
+# Ejecutar
+lista_pvalor <- remueve_pvalor(modelo_final, umbral = 0.05)
+
+# Ver modelo final
+modelo_final_p <- lista_pvalor[[length(lista_pvalor)]]
+summary(modelo_final_p)
 
 
+#Evaluacion de supuestos 
+residuales <- modelo_final_p$residuals
+
+# p-value = 1 es mayor que alfa entonces se cumple el supuesto de media cero
+t.test(residuales)
+
+plot(1:length(residuales), residuales, pch = 19, ylim = c(-15,15), type = "b" )
+abline(h = 0, lty = 2, col = 2)
 
 
+#Normalidad
+shapiro.test(residuales) 
+
+#Independencia
+runs.test(residuales) #p-value = 0.9069 se cumple el supuesto de independencia
 
 
+#Homocedasticidad
+bptest(modelo_final_p)
+plot(modelo_final_p, which = 1) # Muestra residuos vs ajustados
+
+summary(modelo_final_p)
+
+# Predicciones del modelo
+predicciones <- predict(modelo_final_p)
+reales <- modelo_final_p$model$puntaje_final
+n <- length(reales)
+
+# Calcular métricas
+AIC_val  <- AIC(modelo_final_p)
+BIC_val  <- BIC(modelo_final_p)
+R2_val   <- summary(modelo_final_p)$r.squared
+ECM_val  <- mean((reales - predicciones)^2)
+RECM_val <- sqrt(ECM_val)
+MAE_val  <- mean(abs(reales - predicciones))
+MAPE_val <- mean(abs((reales - predicciones) / reales)) * 100
+
+# Tabla de comparación
+tabla_metricas <- data.frame(
+  Modelo = "modelo_final_p",
+  AIC    = round(AIC_val,  2),
+  BIC    = round(BIC_val,  2),
+  R2     = round(R2_val,   4),
+  ECM    = round(ECM_val,  4),
+  RECM   = round(RECM_val, 4),
+  MAE    = round(MAE_val,  4),
+  MAPE   = round(MAPE_val, 4)
+)
+
+print(tabla_metricas)
 
 
+# Extraer los 3 últimos modelos de lista_modelos
+n_total <- length(lista_modelos)
+# Uno de los primeros, de la mitad y el ultimo
+modelo1 <- lista_modelos[[2]]                  
+modelo2 <- lista_modelos[[round(n_total / 2)]] 
+modelo3 <- lista_modelos[[n_total]]            
+
+# Pasar cada uno por remueve_pvalor
+lista_p1 <- remueve_pvalor(modelo1, umbral = 0.05)
+lista_p2 <- remueve_pvalor(modelo2, umbral = 0.05)
+lista_p3 <- remueve_pvalor(modelo3, umbral = 0.05)
+
+# Quedarse con el modelo final de cada lista
+modelo_p1 <- lista_p1[[length(lista_p1)]]
+modelo_p2 <- lista_p2[[length(lista_p2)]]
+modelo_p3 <- lista_p3[[length(lista_p3)]]
+
+calcular_metricas <- function(modelo, nombre) {
+  pred   <- predict(modelo)
+  reales <- modelo$model[[1]]
+  data.frame(
+    Modelo = nombre,
+    AIC    = round(AIC(modelo), 2),
+    BIC    = round(BIC(modelo), 2),
+    R2     = round(summary(modelo)$r.squared, 4),
+    ECM    = round(mean((reales - pred)^2), 4),
+    RECM   = round(sqrt(mean((reales - pred)^2)), 4),
+    MAE    = round(mean(abs(reales - pred)), 4),
+    MAPE   = round(mean(abs((reales - pred) / reales)) * 100, 4)
+  )
+}
+
+tabla_comparacion <- rbind(
+  calcular_metricas(modelo_p1, "modelo_inicio_p"),
+  calcular_metricas(modelo_p2, "modelo_mitad_p"),
+  calcular_metricas(modelo_p3, "modelo_final_p")
+)
+
+print(tabla_comparacion)
