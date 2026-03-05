@@ -5,11 +5,13 @@ install.packages("magick") # Leer imagenes
 
 # Se cargan las librerias 
 library(magick)
+library(ggcorrplot)
+
 
 # Carga de datos
 # URL de github 
 df_imagenes <- read.csv("https://raw.githubusercontent.com/Salo018/Lab1-EYP2/refs/heads/main/Caso_2/labels_imagenes.csv")
-# Pasar variable de respuesta a 0 y 1
+# Pasar variable de respuesta a 0 y 1 (No conforme= 1, Conforme= 0)
 df_imagenes$respuesta <- as.numeric(df_imagenes$respuesta == "No conforme") 
 
 # Carga de todas las imagenes
@@ -153,6 +155,95 @@ df_imagenes <- df_imagenes[, c("imagen_id", "respuesta",
                                "area_0",         "area_1",         "area_2",
                                "rugosidad_0",    "rugosidad_1",    "rugosidad_2",
                                "variacion_verde_0", "variacion_verde_1", "variacion_verde_2")]
+
+
+# Verificar el balance 
+cat("Conforme (0):", mean(df_imagenes$respuesta == 0) * 100, "%\n")
+cat("No conforme (1):", mean(df_imagenes$respuesta == 1) * 100, "%\n")
+
+
+#Distribucion de variables 
+
+par(mfrow = c(2, 3))  #  graficos para imagenes_0
+
+hist(df_imagenes$brillo_medio_0,    main = "Brillo medio",     xlab = "")
+hist(df_imagenes$contraste_0,       main = "Contraste",        xlab = "")
+hist(df_imagenes$area_0,            main = "Área objeto",      xlab = "")
+hist(df_imagenes$rugosidad_0,       main = "Rugosidad",        xlab = "")
+hist(df_imagenes$variacion_verde_0, main = "Variación verde",  xlab = "")
+
+par(mfrow = c(2, 3))  # graficos para imagenes_1
+
+hist(df_imagenes$brillo_medio_1,    main = "Brillo medio",     xlab = "")
+hist(df_imagenes$contraste_1,       main = "Contraste",        xlab = "")
+hist(df_imagenes$area_1,            main = "Área objeto",      xlab = "")
+hist(df_imagenes$rugosidad_1,       main = "Rugosidad",        xlab = "")
+hist(df_imagenes$variacion_verde_1, main = "Variación verde",  xlab = "")
+
+par(mfrow = c(2, 3))  # graficos para imagenes_2
+
+hist(df_imagenes$brillo_medio_2,    main = "Brillo medio",     xlab = "")
+hist(df_imagenes$contraste_2,       main = "Contraste",        xlab = "")
+hist(df_imagenes$area_2,            main = "Área objeto",      xlab = "")
+hist(df_imagenes$rugosidad_2,       main = "Rugosidad",        xlab = "")
+hist(df_imagenes$variacion_verde_2, main = "Variación verde",  xlab = "")
+
+
+
+#Matriz de correlacion
+
+df_numericas2 <- df_imagenes[, !names(df_imagenes) %in% c("respuesta","imagen_id")]
+
+# Calcular correlación
+correlacion <- cor(df_numericas2)
+ggcorrplot(correlacion,
+           type = "upper",
+           lab = TRUE,
+           colors = c("#6D9EC1", "white", "#E31246"))
+
+
+#Grafico de Boxplot
+
+par(mfrow = c(2, 3), bg = "#f9f9f9")
+
+variables <- list(
+  list(x = df_imagenes$brillo_medio_0,    nombre = "Brillo Medio"),
+  list(x = df_imagenes$contraste_0,       nombre = "Contraste"),
+  list(x = df_imagenes$area_0,            nombre = "Área Objeto"),
+  list(x = df_imagenes$rugosidad_0,       nombre = "Rugosidad"),
+  list(x = df_imagenes$variacion_verde_0, nombre = "Variación Verde")
+)
+
+for (v in variables) {
+  boxplot(v$x ~ df_imagenes$respuesta,
+          main   = paste(v$nombre, "por Clase"),
+          xlab   = "0 = Conforme     1 = No conforme",
+          ylab   = v$nombre,
+          col    = c("#3498DB", "#E74C3C"),
+          border = c("#2171A8", "#C0392B"),
+          frame  = FALSE)
+}
+
+
+
+# PRIMER MODELO DE REGRESION LOGISTICA 
+# Variable respuesta: respuesta (0 = Conforme, 1 = No conforme)
+# Variables predictoras: las 15 metricas extraidas de las imagenes
+
+modelo_logistico1<- glm(respuesta ~ . - imagen_id,
+                        family = binomial(link = logit),
+                        data   = df_imagenes)
+
+# Ver resumen del modelo
+summary(modelo_logistico1)
+
+
+
+
+
+
+
+
 
 
 
