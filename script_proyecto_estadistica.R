@@ -559,7 +559,8 @@ remueve_VIF_grande <- function(modelo, u){
 #Aplicar la funcion para quitar VIF mayores a 10
 lista_modelos <- remueve_VIF_grande(modelo_limpio, u = 10)
 
-
+coefs <- coef(modelo)
+coefs[is.na(coefs)]
 
 
 
