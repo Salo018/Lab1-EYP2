@@ -130,7 +130,6 @@ hist(df$promedio_previo)
 #Ver porcentaje de valores por encima del rango definido
 ((sum(df$horas_estudio > 35, na.rm = TRUE))/dim(df)[1])*100
 
-
 ggplot(df, aes(x = horas_estudio)) +
   geom_histogram(bins = 20) +
   labs(title = "Distribución de Horas de Estudio",
@@ -138,33 +137,12 @@ ggplot(df, aes(x = horas_estudio)) +
        y = "Frecuencia") +
   theme_minimal()
 
-# Calcular límites con Rango intercuartilico 
-Q1 <- quantile(df$horas_estudio, 0.25, na.rm = TRUE)
-Q3 <- quantile(df$horas_estudio, 0.75, na.rm = TRUE)
-IQR <- Q3 - Q1
 
-limite_superior <- Q3 + 1.5 * IQR
-limite_inferior <- Q1 - 1.5 * IQR
-
-cat("Límite superior:", limite_superior, "\n")
-cat("Límite inferior:", limite_inferior, "\n")
-
-# Ver cuántos outliers tenemos
-sum(df$horas_estudio > limite_superior, na.rm = TRUE)
-
-# Ver los valores exactos
-df$horas_estudio[df$horas_estudio > limite_superior]
-
-# Porcentaje de outliers
-total_outliers <- sum(df$horas_estudio > limite_superior, na.rm = TRUE)
-total_datos <- sum(!is.na(df$horas_estudio))
-porcentaje <- (total_outliers / total_datos) * 100
-
-cat("Porcentaje:", round(porcentaje, 2), "%\n")
+#Eliminar registro outlier de 86.717804 horas de estudio 
+df <- subset(df, is.na(horas_estudio) | horas_estudio <= 70)
 
 
-# Reemplazar outliers por el limite intercuartilico superior 
-df$horas_estudio <- pmin(df$horas_estudio, limite_superior)
+
 
 ggplot(df, aes(x = horas_estudio)) +
   geom_histogram(bins = 20) +
@@ -365,15 +343,43 @@ plot(df_imputado$puntaje_final, df_imputado$promedio_previo,
 abline(lm(promedio_previo ~ puntaje_final, data=df_imputado),
        col="red", lwd = 2)
 
-# Rellenar valores nulos de horas estudio respecto a puntaje_final
-modelo_horas_estudio <- lm(horas_estudio ~ puntaje_final, data = df_imputado)
-summary(modelo_horas_estudio)
 
-prediccion_horas_estudio <- predict(modelo_horas_estudio,
-                        newdata = df_imputado)
+
+#COMPARACION DE MODELOS PARA LA IMPUTACION DE horas_estudio
+
+#Probamos el modelo de regresion lineal simple
+# Rellenar valores nulos de horas estudio respecto a puntaje_final
+modelo_horas_simple <- lm(horas_estudio ~ puntaje_final, data = df_imputado)
+summary(modelo_horas_simple)
+
+##Probamos el modelo de regresion lineal simple con raiz cuadrada 
+modelo_horas_raiz <- lm(sqrt(horas_estudio) ~ puntaje_final, data = df_imputado)
+summary(modelo_horas_raiz)
+
+#Elegimos el modelo de regresion lineal simple con raiz cuadrada: Predecir valores en el df_imputado
+#Se aplicó transformación de raiz cuadrada a horas_estudio 
+#para corregir asimetría y reducir la influencia de outliers,
+#mejorando el R² ajustado de 0.589 a 0.686
+predicciones_raiz <- predict(modelo_horas_raiz, newdata = df_imputado)
+
+# Revertir la raiz cuadrada de las predicciones
+predicciones_horas <- predicciones_raiz^2
+
 # Aplicacion del anterior modelo de regresion lineal simple
-df_imputado$horas_estudio[is.na(df_imputado$horas_estudio)] <- prediccion_horas_estudio[is.na(df_imputado$horas_estudio)]
+df_imputado$horas_estudio[is.na(df$horas_estudio)] <- predicciones_horas[is.na(df$horas_estudio)]
 sum(is.na(df_imputado$horas_estudio))
+
+
+#Grafico de disperción 
+
+plot(df_imputado$puntaje_final, df_imputado$horas_estudio,
+     xlab="Puntaje final",
+     ylab="Horas estudio",
+     main = "Disperción entre puntaje final y horas de estudio",
+     col = "#5978D4", # azul con transparencia
+     cex = 0.9)      
+
+
 
 
 # Rellenar valores nulos de promedio_previo respecto a puntaje_final
@@ -561,7 +567,10 @@ lista_modelos <- remueve_VIF_grande(modelo_limpio, u = 10)
 
 coefs <- coef(modelo)
 coefs[is.na(coefs)]
-#Prueba
+
+
+
+
 
 
 
