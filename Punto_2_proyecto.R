@@ -2,10 +2,13 @@
 
 # Importar librerias solo si no se han instalado
 install.packages("magick") # Leer imagenes 
+install.packages("brglm2")
 
 # Se cargan las librerias 
 library(magick)
 library(ggcorrplot)
+library(brglm2)
+
 
 
 # Carga de datos
@@ -237,6 +240,145 @@ modelo_logistico1<- glm(respuesta ~ . - imagen_id,
 # Ver resumen del modelo
 summary(modelo_logistico1)
 
+#Implementar VIF 
+library(car)
+vif(modelo_logistico1)
+
+#Mirar cuales tienen correlacion mas baja 
+# La que tenga correlaciones más bajas con las otras dos se conserva 
+#Rugosidad
+cor(df_imagenes[, c("rugosidad_0", "rugosidad_1", "rugosidad_2")])
+#Nos quedamos con rugosidad_1
+#Brillo medio
+cor(df_imagenes[, c("brillo_medio_0", "brillo_medio_1", "brillo_medio_2")])
+#Nos quedamos con brillo_medio2
+#Contraste 
+cor(df_imagenes[, c("contraste_0", "contraste_1", "contraste_2")])
+#Nos quedamos con contraste_2
+#Area
+cor(df_imagenes[, c("area_0", "area_1", "area_2")])
+#Nos quedamos con area_1
+#Variacion verde 
+cor(df_imagenes[, c("variacion_verde_0", "variacion_verde_1", "variacion_verde_2")])
+#Nos quedamos con varacion_verde_1
+
+
+
+#Modelo de regresiom logistica 2
+#Descartamos porque quitar las variables con correlacion mas alta no mejoro las 
+#metricas del modelo 
+modelo_logistico2 <- glm(respuesta ~ brillo_medio_2 + contraste_2 + 
+                       area_1 + rugosidad_1 + variacion_verde_1,
+                     family = binomial(link = logit),
+                     data = df_imagenes)
+
+summary(modelo_logistico2)
+vif(modelo_logistico2)
+
+#Modelo de regresion logistica 3: Brillo medio 
+modelo_logistico3 <- glm(respuesta ~ brillo_medio_0 + brillo_medio_1 + 
+                           brillo_medio_2,family = binomial (link = logit),
+                         data = df_imagenes)
+
+summary(modelo_logistico3)
+vif(modelo_logistico3)
+
+#Modelo de regresion logistica 4: contraste
+modelo_logistico4 <- glm(respuesta ~ contraste_0 + contraste_1 + 
+                           contraste_2,family = binomial (link = logit),
+                         data = df_imagenes)
+
+summary(modelo_logistico4)
+vif(modelo_logistico4)
+
+#Modelo de regresion logistica 5: area
+modelo_logistico5 <- glm(respuesta ~ area_0 + area_1 + 
+                           area_2,family = binomial (link = logit),
+                         data = df_imagenes)
+
+summary(modelo_logistico5)
+vif(modelo_logistico5)
+
+#Modelo de regresion logistica 6: rugosidad
+modelo_logistico6 <- glm(respuesta ~ rugosidad_0 + rugosidad_1 + 
+                           rugosidad_2,family = binomial (link = logit),
+                         data = df_imagenes)
+
+summary(modelo_logistico6)
+vif(modelo_logistico6)
+
+#Modelo de regresion logistica 7: variacion_verde
+modelo_logistico7 <- glm(respuesta ~ variacion_verde_0 + variacion_verde_1 + 
+                           variacion_verde_2,family = binomial (link = logit),
+                         data = df_imagenes)
+
+summary(modelo_logistico7 )
+vif(modelo_logistico7 )
+
+
+
+#Comprobar Separacion perfecta: rugosidad_1 y variacion_verde_1 causan Cuasi-separación
+
+variables <- c("brillo_medio_1", "contraste_1", 
+               "area_1", "rugosidad_1", "variacion_verde_1")
+
+par(mfrow = c(2, 3))
+for (v in variables) {
+  boxplot(df_imagenes[[v]] ~ df_imagenes$respuesta,
+          main = v,
+          xlab = "Respuesta",
+          col = c("lightblue", "salmon"))
+}
+
+
+
+
+#Modelo de regresion logistica 8: Juntas
+modelo_logistico8 <- glm(respuesta ~ brillo_medio_0 + contraste_0 + 
+                           area_0 ,family = binomial (link = logit),
+                         data = df_imagenes)
+
+summary(modelo_logistico8 )
+vif(modelo_logistico8 )
+
+
+
+
+#Modelo 9
+
+modelo_logistico9 <- glm(respuesta ~ brillo_medio_2 + contraste_2,
+                 family = binomial(link = "logit"),
+                 data = df_imagenes)
+
+summary(modelo_logistico9)
+vif(modelo_logistico9)
+
+
+
+#Modelo 10
+
+modelo_logistico10 <- glm(respuesta ~  area_2 + contraste_2 ,
+                          family = binomial(link = "logit"),
+                          data = df_imagenes)
+
+summary(modelo_logistico10)
+vif(modelo_logistico10)
+
+#Modelo 11
+
+modelo_logistico11 <- glm(respuesta ~  area_0 + contraste_0 ,
+                          family = binomial(link = "logit"),
+                          data = df_imagenes)
+
+summary(modelo_logistico11)
+vif(modelo_logistico11)
+
+
+#COMPROBAR SUPUESTO DE LINEALIDAD
+#Probar la linealidad del logit (Box-Tidwell)
+boxTidwell(respuesta ~ area_0 + contraste_0, data = df_imagenes)
+#Contraste no cumple debe transformarse 
+df_imagenes$log_contraste_0 <- log(df_imagenes$contraste_0)
 
 
 
