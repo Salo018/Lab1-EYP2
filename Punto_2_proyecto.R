@@ -5,6 +5,8 @@ install.packages("magick") # Leer imagenes
 
 # Se cargan las librerias 
 library(magick)
+library(ggcorrplot)
+
 
 # Carga de datos
 # URL de github 
@@ -153,8 +155,32 @@ df_imagenes <- df_imagenes[, c("imagen_id", "respuesta",
                                "area_0",         "area_1",         "area_2",
                                "rugosidad_0",    "rugosidad_1",    "rugosidad_2",
                                "variacion_verde_0", "variacion_verde_1", "variacion_verde_2")]
+
+
 # Verificar el balance 
 cat("Conforme (0):", mean(df_imagenes$respuesta == 0) * 100, "%\n")
 cat("No conforme (1):", mean(df_imagenes$respuesta == 1) * 100, "%\n")
+
+
+#Matriz de correlacion
+
+df_numericas2 <- df_imagenes[, !names(df_imagenes) %in% c("respuesta","imagen_id")]
+
+# Calcular correlación
+correlacion <- cor(df_numericas2)
+ggcorrplot(correlacion,
+           type = "upper",
+           lab = TRUE,
+           colors = c("#6D9EC1", "white", "#E31246"))
+
+
+
+
+
+
+
+
+
+
 
 
